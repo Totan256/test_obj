@@ -11,8 +11,7 @@
 #include <GLFW/glfw3.h>
 //#include "setShader.cpp"
 
-int readShaderSource(GLuint shaderObj, std::string fileName)
-{
+int readShaderSource(GLuint shaderObj, std::string fileName){
     //ファイルの読み込み
     std::ifstream ifs(fileName);
     if (!ifs)
@@ -36,7 +35,7 @@ int readShaderSource(GLuint shaderObj, std::string fileName)
     return 0;
 }
 
-GLint makeShader(std::string vertexFileName, std::string fragmentFileName, std::string pv, std::string fc)
+int makeShader(std::string vertexFileName, std::string fragmentFileName, std::string pv, std::string fc)
 {
     // シェーダーオブジェクト作成
     GLuint vertShaderObj = glCreateShader(GL_VERTEX_SHADER);

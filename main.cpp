@@ -1,4 +1,4 @@
-//#include "stdafx.h"
+//g++ main.cpp -lGL -lglfw -lGLEW -lcurses -no-pie
 #include <iostream>
 #include <math.h>
 //#include "glfw3.lib"
@@ -12,23 +12,14 @@
 //#include <gl/glfw.h>
 #include <GLFW/glfw3.h>
 
-#include "readSouce.cpp"
-#include "engine.cpp"
+#include "sharestruct.h"
+#include "drawengine.cpp"
 #include "key.cpp"
+#include "gameEngine.cpp"
 
 
 
-struct vec3
-{
-    float x=0.0;
-    float y=0.0;
-    float z=0.0;
-};
-struct vec2
-{
-    float x = 0.0;
-    float y = 0.0;
-};
+
 
 
 
@@ -73,9 +64,16 @@ GLuint createTexture(GLenum internalFormat, GLsizei width, GLsizei height)
 
     return t;
 }
-
+void Mainloop();
 int main()
 {
+    d_Engine = new DrawEngine();
+    if(!d_Engine->Init()){
+        std::cerr << "Initに失敗したため終了" << std::endl;
+    }
+    
+    /*
+    
     // GLFW初期化
     if (glfwInit() == GL_FALSE)
     {
@@ -86,7 +84,6 @@ int main()
 
     
     //window_size
-    //              int weigth = 640, hight = 480;
     GLsizei weigth(1200), hight(1000);
     //shader_file_name
     const std::string vertex_filename = "shader.vert";
@@ -138,7 +135,7 @@ int main()
     static const int vertices = sizeof(position) / sizeof(position[0]);
     // 頂点配列オブジェクト
     GLuint vao = createObject(vertices, position);
-
+    */
     
 
     //==============texture1 実装===================================================
@@ -209,11 +206,29 @@ int main()
         //glFlush();
         //glfwPollEvents();
     //-----------------------------------------------------------------------------------*/
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glBindVertexArray(vao);
+    
+    static int outshader = makeShader("shader.vert", "outshader.frag", "pv", "fc");
+    glUseProgram(outshader);
+
     // フレームループ
+    Mainloop();
+
+
+    glBindVertexArray(0);
+    glUseProgram(0);
+    // GLFWの終了処理
+    glfwTerminate();
+
+    return 0;
+}
+
+void Mainloop(){
+    characterinf player;
+    player.pos = {0,0,0};
+    player.dir = {0,0,0};
+    static const float FRAMETIME = 1./60.;
     float now, sleeptime, prev = 0.0,speed=0.001;
-    while (glfwWindowShouldClose(window) == GL_FALSE)
+    while (glfwWindowShouldClose(d_Engine->window) == GL_FALSE)
     {
         
         
@@ -223,49 +238,38 @@ int main()
         if (now - prev > FRAMETIME) {
             prev = now;
             //============キー入力========================================================================================================
-            pos.z += (float(GetKey(GLFW_KEY_W)) - float(GetKey(GLFW_KEY_S))) * speed * cos(dir.x)
-                + (float(GetKey(GLFW_KEY_A)) - float(GetKey(GLFW_KEY_D))) * speed * sin(dir.x);
-            pos.x += -(float(GetKey(GLFW_KEY_A)) - float(GetKey(GLFW_KEY_D))) * speed * cos(dir.x)
-                    + (float(GetKey(GLFW_KEY_W)) - float(GetKey(GLFW_KEY_S))) * speed * sin(dir.x);
-            pos.y += (float(GetKey(GLFW_KEY_SPACE)) - float(GetKey(GLFW_KEY_V))) * speed;
-            dir.x -= (float(GetKey(GLFW_KEY_LEFT)) - float(GetKey(GLFW_KEY_RIGHT))) * speed / 10.;// 0x41==A, 0x44==D
-            dir.y += (float(GetKey(GLFW_KEY_UP)) - float(GetKey(GLFW_KEY_DOWN))) * speed / 10.;// 0x57==W, 0x53==S
-            time += (float(GetKey(GLFW_KEY_O)) - float(GetKey(GLFW_KEY_P))) * speed;
+            player.pos.z += (float(GetKey(GLFW_KEY_W)) - float(GetKey(GLFW_KEY_S))) * speed * cos(player.dir.x)
+                + (float(GetKey(GLFW_KEY_A)) - float(GetKey(GLFW_KEY_D))) * speed * sin(player.dir.x);
+            player.pos.x += -(float(GetKey(GLFW_KEY_A)) - float(GetKey(GLFW_KEY_D))) * speed * cos(player.dir.x)
+                    + (float(GetKey(GLFW_KEY_W)) - float(GetKey(GLFW_KEY_S))) * speed * sin(player.dir.x);
+            player.pos.y += (float(GetKey(GLFW_KEY_SPACE)) - float(GetKey(GLFW_KEY_V))) * speed;
+            player.dir.x -= (float(GetKey(GLFW_KEY_LEFT)) - float(GetKey(GLFW_KEY_RIGHT))) * speed / 10.;// 0x41==A, 0x44==D
+            player.dir.y += (float(GetKey(GLFW_KEY_UP)) - float(GetKey(GLFW_KEY_DOWN))) * speed / 10.;// 0x57==W, 0x53==S
+            //time += (float(GetKey(GLFW_KEY_O)) - float(GetKey(GLFW_KEY_P))) * speed;
             
                 
             //*/==========================================================================================================================
 
             // Windowのサイズ調整
-            glfwGetFramebufferSize(window, &weigth, &hight);
+            d_Engine->setwindow();
             
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            glUseProgram(outshader);
-
-            glViewport(0, 0, weigth, hight);
-
+            
 
             // uniform関数指定
-            glUniform2f(glGetUniformLocation(outshader, "Res"), weigth, hight);
-            glUniform3f(glGetUniformLocation(outshader, "Pos"), pos.x, pos.y, pos.z);
-            glUniform2f(glGetUniformLocation(outshader, "turn"), dir.x, dir.y);
-            glUniform1f(glGetUniformLocation(outshader, "time"), time);
-
-
+            /*
+            glUniform2f(glGetUniformLocation(drawEngine::outshader, "Res"),
+                        drawEngine::windowsize.x, drawEngine::windowsize.y);
+            glUniform3f(glGetUniformLocation(drawEngine::outshader, "Pos"),
+                        player.pos.x, player.pos.y, player.pos.z);
+            glUniform2f(glGetUniformLocation(drawEngine::outshader, "turn"),
+                        player.dir.x, player.dir.y);
+            //glUniform1f(glGetUniformLocation(drawEngine::outshader, "time"), time);
+            */
+            
             // 描画
-            glDrawArrays(GL_TRIANGLE_STRIP, 0, vertices);
-
-
-            // ダブルバッファのスワップ
-            glfwSwapBuffers(window);
-            glfwPollEvents();
+            d_Engine->drawcall();
 
 
         }
     }
-    glBindVertexArray(0);
-    glUseProgram(0);
-    // GLFWの終了処理
-    glfwTerminate();
-
-    return 0;
 }
